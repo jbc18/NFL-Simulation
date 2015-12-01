@@ -1,11 +1,3 @@
-//
-//  main.c
-//  asdf
-//
-//  Created by Jarrett Cathcart on 8/31/15.
-//  Copyright (c) 2015 Jarrett Cathcart. All rights reserved.
-//
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -13,13 +5,12 @@
 int start_game();
 void drive();
 int starting_yardline();
-
-char team_name
+void run_play();
 
 void defense_sim();
 
 int main() {
-    char team_name[20];
+    char *team_name[20];
     if (start_game(team_name) == 0) {
         drive();
     } else {
@@ -27,9 +18,8 @@ int main() {
     }
 }
 
-int start_game(team_name[]) {
+int start_game(char *team_name) {
     srand(time(NULL));
-    char team_name[20];
     char coin_choice[1];
     int coin_number;
     int coin_outcome = rand() % 2;
@@ -68,55 +58,24 @@ void drive() {
     int yard = starting_yardline();
     
     if (yard > 0 && yard < 50) {
-        printf("The ball is on ")
+        printf("\nThe ball is on your own %d-yard-line.", yard);
+    } else if (yard > 50 && yard < 100) {
+        printf("\nThe ball is on the opponent's %d-yard-line.", 100 - yard);
+    } else if (yard == 50) {
+        printf("\nThe ball is on the %d-yard-line.", yard);
     }
     
-    //generate random yard
+    run_play();
 }
 
 int starting_yardline() {
     return rand() % 100 + 1;
 }
 
+void run_play() {
+    
+}
+
 void defense_sim() {
     puts("");
 }
-
-0-50
-your own yard
-51-100
-100-yard = opponent's yard'
-
-
-
-/*
- 
- kickoff()
- 
- start_drive()
- 
- starting_yardline()
- 
- show_down_and_yard()
- 
- allowed_plays()
- 
- input_play()
- 
- random_outcome()
- 
- show_outcome()
- 
- down_plus_one()
- 
- new_yardage()
- 
- show_clock()
- 
- yards_total()
- 
- points_total()
- 
- show_stats()
- 
- */
