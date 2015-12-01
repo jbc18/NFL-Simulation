@@ -17,11 +17,6 @@ struct stats {
     int first_downs;
 };
 
-int total_yards;
-int total_passing_yards;
-int total_running_yards;
-int first_downs;
-
 int start_game();
 void drive();
 int starting_yardline();
