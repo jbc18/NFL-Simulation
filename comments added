@@ -1,0 +1,682 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+struct stats {
+    int total_yards;
+    int total_passing_yards;
+    int total_running_yards;
+    int first_downs;
+};
+
+int yard;
+int yards_gained;
+
+int down = 1;
+
+int team_score;
+int opponent_score;
+
+int start_game();
+void drive();
+int starting_yardline();
+void yard_converter();
+void run_play();
+
+void defense_sim();
+
+void end_game();
+
+//plays
+void short_pass();
+void long_pass();
+void inside_run();
+void outside_run();
+int punt();
+int field_goal();
+
+int main() {
+    // struct stats total_stats;
+    char *team_name[20];
+    
+    if (start_game(team_name) == 0) {
+        drive();
+    } else {
+        defense_sim();
+    }
+    
+    drive();
+    defense_sim();
+    drive();
+    defense_sim();
+    
+    end_game();
+    
+    return 0;
+}
+
+int start_game(char *team_name) {
+    srand(time(NULL)); //sets up random number generator
+    char coin_choice[1]; //char for coin toss selection (heads or tails)
+    int coin_number; //char coin_choice converted to a number for comparison purposes
+    int coin_outcome = rand() % 2; //random number for coin toss random simulation
+    char kickoff_choice[1]; //char for kickoff selection (kick or receive)
+    printf("Welcome to the NFL Game Simulator!\nPlease enter your team's name, up to 20 characters: ");
+    scanf("%s", team_name); //input user's team name
+    if (strcmp(team_name, "Patriots") == 0) { //tests for cheaters and ends game if condition satisfied
+        printf("You have been disqualified for cheating.");
+        exit(0);
+    } else if (strcmp(team_name, "patriots") == 0) {
+        printf("You have been disqualified for cheating.");
+        exit(0);
+    } else if (strcmp(team_name, "Pats") == 0) {
+        printf("You have been disqualified for cheating.");
+        exit(0);
+    } else if(strcmp(team_name, "pats") == 0) {
+        printf("You have been disqualified for cheating.");
+        exit(0);
+    }
+    printf("\nThe game is about to start and it's time for the coin toss!\nWould %s like to pick heads (h) or tails (t)? ", team_name);
+    scanf("%s", coin_choice); //input user's coin side selection
+    
+    //converts char input for coin selection to an int, 0 or 1
+    if (coin_choice[0] == 'h') {
+        coin_number = 0;
+    } else if (coin_choice[0] == 't') {
+        coin_number = 1;
+    } else {
+        puts("\nInvalid input, heads selected by default.\n");
+    }
+    
+    //tests if coin side selection matches coin flip result
+    if (coin_outcome == coin_number) { //coin toss won
+        printf("%s won the coin toss!\nWould %s like to receive (r) or kick (k)? ", team_name, team_name);
+        scanf("%s", kickoff_choice); //input user's kickoff selection (receive or kick)
+        switch(kickoff_choice[0]) { //provides appropiate outcome for each selection
+            case 'k':
+                printf("%s has elected to kick, so %s will receive the ball at the beginning of the 2nd half.\n", team_name, team_name);
+                printf("Get ready for the kickoff!\n");
+                return 1;
+            case 'r':
+                printf("%s has elected to receive.\nGet ready for the kickoff!\n", team_name);
+                return 0;
+            default:
+                printf("\nInvalid input, receive selected by default.\nGet ready for the kickoff!\n");
+                return 0;
+        }
+    } else { //coin toss lost
+        printf("%s lost the coin toss.\nThe other team will receive the kickoff.", team_name);
+        return 1;
+    }
+    
+}
+
+void yard_converter() { //converts our system of 0-100 yards into actual football yardlines
+    
+    if (yard > 0 && yard < 50) { //the first 50 yards are in our own half of the field
+        printf("\nThe ball is on your own %d-yard-line.", yard);
+    } else if (yard > 50 && yard < 100) { //51-100 yards are in the opponent's half
+        printf("\nThe ball is on the opponent's %d-yard-line.", 100 - yard);
+    } else if (yard == 50) { //the neutral halfway yardline
+        printf("\nThe ball is on the %d-yard-line.", yard);
+    }
+    
+}
+
+void drive() {
+    yard = starting_yardline(); //generates random starting yardline for the drive
+    
+    yard_converter(); //presents yardline in football terms
+    
+    //int original_yard = yard;
+    //int new_yard;
+    int yards_left = 0; //initializes counter for yards remaining until first down
+    
+    do {
+        run_play(); //
+        
+        yard += yards_gained; //counter for yardline position on field
+        //        yards_left = 10 - yards_gained;
+        //        yards_left - yards_gained;
+        if (down == 1) {
+            
+            yards_left = 10;
+            yards_left = yards_left - yards_gained; //updates yardage needed for first down
+            
+        } else if (down == 2 || down == 3 || down == 4) {
+            
+            yards_left = yards_left - yards_gained; //updates yardage needed for first down
+            
+        }
+        if (yard >= 100) { //tests for touchdown, adds points, and displays score
+            printf("\nYour team has scored a touchdown!\n");
+            team_score += 7;
+            printf("\nYour team now has %d points!", team_score);
+            printf("\nThe opposing team has %d points.\n", opponent_score);
+            defense_sim(); //runs simulated drive for opposing team
+            return;
+        }
+        
+        else if (yards_left > 0) { //tests if first down
+            down++; //increases down count by one
+            printf("\nIt is now down %d and %d\n", down, yards_left); //displays down and yards left to use
+            yard_converter(); //presents yardline in football terms
+            
+        } else { //no other conditions met, resets to first down
+            down = 1;
+            yards_left = 0;
+            printf("\nYou have earned a first down! It is now first and 10\n");
+            yard_converter(); //presents yardline in football terms
+        }
+    } while (down == 1 || down == 2 || down == 3 || down == 4);
+    
+    if (down == 5) {
+        
+        punt();
+    }
+    
+}
+
+int starting_yardline() { //generates a random yardline
+    return rand() % 100 + 1;
+}
+
+void run_play() { //process for selecting and running a play
+    char play_selection = 's';
+    
+    printf("\nSelect a play from the following list: \n");
+    
+    if (down == 1 || down == 2 || down == 3) { //provides correct plays for downs 1-3
+        puts("\nShort pass - S, Long pass - L, Inside run - I, Outside run - O");
+        printf("\nPlay selection: ");
+        scanf("%s", &play_selection);
+        switch(play_selection) { //runs correct play based on user input
+            case 'S':
+                short_pass();
+                break;
+            case 'L':
+                long_pass();
+                break;
+            case 'I':
+                inside_run();
+                break;
+            case 'O':
+                outside_run();
+                break;
+            default:
+                puts("\nInvalid input type");//error message, try again
+        }
+    } else if (down == 4) { //provides correct plays for down 4
+        if (yard < 55) { //not in field goal range, adds on punt option
+            printf("\nShort pass - S, Long pass - L, Inside run - I, Outside run - O, Punt - P");
+            printf("\nPlay selection: ");
+            scanf("%s", &play_selection);
+            switch(play_selection) {
+                case 'S':
+                    short_pass();
+                    break;
+                case 'L':
+                    long_pass();
+                    break;
+                case 'I':
+                    inside_run();
+                    break;
+                case 'O':
+                    outside_run();
+                    break;
+                case 'P':
+                    punt();
+                    break;
+                default:
+                    puts("\nInvalid input type");//error message, try again
+            }
+        } else if (yard >= 55) { //in field goal range, adds on field goal option
+            printf("\nShort pass - S, Long pass - L, Inside run - I, Outside run - O, Field goal - F, Punt - P");
+            printf("\nPlay selection: ");
+            scanf("%s", &play_selection);
+            switch(play_selection) {
+                case 'S':
+                    short_pass();
+                    break;
+                case 'L':
+                    long_pass();
+                    break;
+                case 'I':
+                    inside_run();
+                    break;
+                case 'O':
+                    outside_run();
+                    break;
+                case 'F':
+                    field_goal();
+                    break;
+                case 'P':
+                    punt();
+                    break;
+                default:
+                    puts("\nInvalid input type");//error message, try again
+            }
+        }
+    }
+}
+
+void defense_sim() { //simulates opponent's offensive drive
+    
+    int result;
+    int score;
+    
+    result = rand() % 100 + 1;
+    
+    //probability created for possible outcomes
+    if (result <= 50) { //50% chance of scoring
+        score = rand() % 100 + 1;
+        
+        if( score <= 35 ) { //35% chance of scoring a touchdown
+            puts("\nThe opposing team has scored a touchdown! :(");
+            opponent_score += 7;
+        }
+        else { //15% chance of scoring a field goal
+            puts ("\nThe opposing team has scored a field goal! :/");
+            opponent_score += 3;
+            printf("\nThe opposing team now has %d points.", opponent_score);
+            printf("\nYour team has %d points.\n\n", team_score);
+            
+        }
+    } else { //50% chance of not scoring
+        puts ("\nThe opposing team has elected to punt! :)");
+        punt();
+    }
+    
+}
+
+void short_pass() { //runs a short pass play
+    
+    int attempt;
+    int gain;
+    
+    attempt = rand() % 100 + 1; //generates random outcome for complete or incomplete pass
+    
+    if (attempt <= 70) {                       //70% chance of complete pass, yards gained
+        gain = rand() % 100 + 1; //generates random outcome for number of yards gained
+        
+        if ( gain <= 5 ) {                     //5% chance of gaining 1 yard
+            yards_gained = 1;
+        }
+        else if ( 6 <= gain && gain <= 15 ) {  //10% chance of gaining 2 yards
+            yards_gained = 2;
+            
+        }
+        else if ( 16 <= gain && gain <= 40 ) { //25% chance of gaining 3 yards
+            yards_gained = 3;
+            
+        }
+        else if ( 41 <= gain && gain <= 60 ) { //20% chance of gaining 4 yards
+            yards_gained = 4;
+            
+        }
+        else if ( 61 <= gain && gain <= 70 ) { //10% chance of gaining 5 yards
+            yards_gained = 5;
+            
+        }
+        else if ( 71 <= gain && gain <= 80 ) { //10% chance of gaining 6 yards
+            yards_gained = 6;
+            
+        }
+        else if ( 81 <= gain && gain <= 85 ) { //5% chance of gaining 7 yards
+            yards_gained = 7;
+            
+        }
+        else if ( 86 <= gain && gain <= 90 ) { //5% chance of gaining 8 yards
+            yards_gained = 8;
+            
+        }
+        else if ( 91 <= gain && gain <= 93 ) { //3% chance of gaining 9 yards
+            yards_gained = 9;
+            
+        }
+        else if ( 94 <= gain && gain <= 96 ) { //3% chance of gaining 10 yards
+            yards_gained = 10;
+            
+        }
+        else if ( 97 <= gain && gain <= 98 ) { //2% chance of gaining 15 yards
+            yards_gained = 15;
+            
+        }
+        else if (gain == 99) {                 //1% chance of gaining 25 yards
+            yards_gained = 25;
+            
+        }
+        else {                                 //1% chance of a touchdown
+            yards_gained = 100;
+            
+        }
+        printf("You have gained %d yards!", yards_gained);
+    }
+    else {                                     //30% chance of incomplete pass, no yards gained
+        puts("The pass fell incomplete!");
+        yards_gained = 0;
+    }
+}
+
+void long_pass() { //runs a long pass play
+    
+    int attempt;
+    int gain;
+    
+    attempt = rand() % 100 + 1; //generates random outcome for complete or incomplete pass
+    
+    if (attempt <= 40) {                       //40% chance of complete pass, yards gained
+        gain = rand() % 100 + 1; //generates random outcome for number of yards gained
+        
+        if ( gain <= 5 ) {                     //5% chance of gaining 5 yards
+            yards_gained = 5;
+            
+        }
+        else if ( 6 <= gain && gain <= 15 ) {  //10% chance of gaining 7 yards
+            yards_gained = 7;
+            
+        }
+        else if ( 16 <= gain && gain <= 40 ) { //25% chance of gaining 8 yards
+            yards_gained = 8;
+            
+        }
+        else if ( 41 <= gain && gain <= 60 ) { //20% chance of gaining 10 yards
+            yards_gained = 10;
+            
+        }
+        else if ( 61 <= gain && gain <= 70 ) { //10% chance of gaining 12 yards
+            yards_gained = 12;
+            
+        }
+        else if ( 71 <= gain && gain <= 80 ) { //10% chance of gaining 15 yards
+            yards_gained = 15;
+            
+        }
+        else if ( 81 <= gain && gain <= 85 ) { //5% chance of gaining 20 yards
+            yards_gained = 20;
+            
+        }
+        else if ( 86 <= gain && gain <= 90 ) { //5% chance of gaining 25 yards
+            yards_gained = 25;
+            
+        }
+        else if ( 91 <= gain && gain <= 93 ) { //3% chance of gaining 35 yards
+            yards_gained = 35;
+            
+        }
+        else if ( 94 <= gain && gain <= 96) {  //3% chance of gaining 50 yards
+            yards_gained = 50;
+            
+        }
+        else if ( 97 <= gain && gain <= 98) {  //2% chance of gaining 60 yards
+            yards_gained = 60;
+            
+        }
+        else if (gain == 99) {                 //1% chance of gaining 75 yards
+            yards_gained = 75;
+            
+        }
+        else {                                 //1% chance of a touchdown
+            yards_gained = 100;
+            
+        }
+        printf("You have gained %d yards!", yards_gained);
+    }
+    else {                                     //60% chance of incomplete pass
+        puts("The pass fell incomplete!");
+    }
+}
+
+void inside_run() { //runs inside run
+    
+    int gain;
+    
+    gain = rand() % 100 + 1; //generates random outcome for yards gained
+    
+    if ( gain <= 5 ) { //5% chance of gaining 1 yard
+        yards_gained = 1;
+        
+    }
+    else if ( 6 <= gain && gain <= 15 ) { //10% chance of gaining 2 yards
+        yards_gained = 2;
+        
+    }
+    else if ( 16 <= gain && gain <= 40 ) { //25% chance of gaining 3 yards
+        yards_gained = 3;
+        
+    }
+    else if ( 41 <= gain && gain <= 60 ) { //20% chance of gaining 4 yards
+        yards_gained = 4;
+        
+    }
+    else if ( 61 <= gain && gain <= 70 ) { //10% chance of gaining 5 yards
+        yards_gained = 5;
+        
+    }
+    else if ( 71 <= gain && gain <= 80 ) { //10% chance of gaining 6 yards
+        yards_gained = 6;
+        
+    }
+    else if ( 81 <= gain && gain <= 85 ) { //5% chance of gaining 7 yards
+        yards_gained = 7;
+        
+    }
+    else if ( 86 <= gain && gain <= 90 ) { //5% chance of gaining 8 yards
+        yards_gained = 8;
+        
+    }
+    else if ( 91 <= gain && gain <= 93 ) { //3% chance of gaining 9 yards
+        yards_gained = 9;
+        
+    }
+    else if ( 94 <= gain && gain <= 96) { //3% chance of gaining 10 yards
+        yards_gained = 10;
+        
+    }
+    else if ( 97 <= gain && gain <= 98) { //2% chance of gaining 15 yards
+        yards_gained = 15;
+        
+    }
+    else if (gain == 99) { //1% chance of gaining 25 yards
+        yards_gained = 25;
+        
+    }
+    else { //1% chance of a touchdown
+        yards_gained = 100;
+        
+    }
+    printf("You have gained %d yards!", yards_gained);
+}
+
+void outside_run() { //runs outside run
+    
+    int gain;
+    
+    gain = rand() % 100 + 1; //generates random outcome for yards gained
+    
+    if ( gain <= 5 ) {                     //5% chance of gaining 1 yard
+        yards_gained = 1;
+        
+    }
+    else if ( 6 <= gain && gain <= 15 ) {  //10% chance of gaining 2 yards
+        yards_gained = 2;
+        
+    }
+    else if ( 16 <= gain && gain <= 40 ) { //25% chance of gaining 3 yards
+        yards_gained = 3;
+        
+    }
+    else if ( 41 <= gain && gain <= 60 ) { //20% chance of gaining 4 yards
+        yards_gained = 4;
+        
+    }
+    else if ( 61 <= gain && gain <= 70 ) { //10% chance of gaining 5 yards
+        yards_gained = 5;
+        
+    }
+    else if ( 71 <= gain && gain <= 80 ) { //10% chance of gaining 6 yards
+        yards_gained = 6;
+        
+    }
+    else if ( 81 <= gain && gain <= 85 ) { //5% chance of gaining 7 yards
+        yards_gained = 7;
+        
+    }
+    else if ( 86 <= gain && gain <= 90 ) { //5% chance of gaining 8 yards
+        yards_gained = 8;
+        
+    }
+    else if ( 91 <= gain && gain <= 93 ) { //3% chance of gaining 9 yards
+        yards_gained = 9;
+        
+    }
+    else if ( 94 <= gain && gain <= 96) {  //3% chance of gaining 10 yards
+        yards_gained = 10;
+        
+    }
+    else if ( 97 <= gain && gain <= 98) {  //2% chance of gaining 15 yards
+        yards_gained = 15;
+        
+    }
+    else if (gain == 99) {                 //1% chance of gaining 25 yards
+        yards_gained = 25;
+        
+    }
+    else {                                 //1% chance of a touchdown
+        yards_gained = 100;
+        
+    }
+    printf("You have gained %d yards!", yards_gained);
+}
+
+int punt() { //runs punt play
+    
+    int yards;
+    int yards_punted;
+    
+    yards = rand() % 100 + 1; //generates random outcome for yards punted
+    
+    if ( yards <= 5 ) {                      //5% chance of a 55-yard punt
+        yards_punted = 55;
+        return yards_punted;
+    }
+    else if ( 6 <= yards && yards <= 15 ) {  //10% chance of a 50-yard punt
+        yards_punted = 50;
+        return yards_punted;
+    }
+    else if ( 16 <= yards && yards <= 40 ) { //25% chance of a 45-yard punt
+        yards_punted = 45;
+        return yards_punted;
+    }
+    else if ( 41 <= yards && yards <= 60 ) { //20% chance of a 40-yard punt
+        yards_punted = 40;
+        return yards_punted;
+    }
+    else if ( 61 <= yards && yards <= 70 ) { //10% chance of a 35-yard punt
+        yards_punted = 35;
+        return yards_punted;
+    }
+    else if ( 71 <= yards && yards <= 80 ) { //10% chance of a 30-yard punt
+        yards_punted = 30;
+        return yards_punted;
+    }
+    else if ( 81 <= yards && yards <= 85 ) { //5% chance of a 25-yard punt
+        yards_punted = 25;
+        return yards_punted;
+    }
+    else if ( 86 <= yards && yards <= 90 ) { //5% chance of a 22-yard punt
+        yards_punted = 22;
+        return yards_punted;
+    }
+    else if ( 91 <= yards && yards <= 93 ) { //3% chance of a 20-yard punt
+        yards_punted = 20;
+        return yards_punted;
+    }
+    else if ( 94 <= yards && yards <= 96) {  //3% chance of a 18-yard punt
+        yards_punted = 18;
+        return yards_punted;
+    }
+    else if ( 97 <= yards && yards <= 98) {  //2% chance of a 15-yard punt
+        yards_punted = 15;
+        return yards_punted;
+    }
+    else if (yards == 99) {                  //1% chance of a 10-yard punt
+        yards_punted = 10;
+        return yards_punted;
+    }
+    else {                                   //1% chance of a 5-yard punt
+        yards_punted = 5;
+        return yards_punted;
+    }
+}
+
+int field_goal() { //runs field goal play
+    
+    int attempt;
+    int result;
+    
+    if (yard >= 90) { //field goal less than 27 yards
+        attempt = rand() % 100 + 1; //generates random outcome for making or missing field goal
+        if (attempt <= 95) { //95% chance of making it
+            team_score += 3;
+        }
+        else {               //5% chance of missing it
+            result = 0;
+        }
+        return result;
+    }
+    else if (89 >= yard && yard >= 80) { //field goal 28 to 37 yards
+        attempt = rand() % 100 + 1; //generates random outcome for making or missing field goal
+        if (attempt <= 85) { //85% chance of making it
+            team_score += 3;
+        }
+        else {               //15% chance of missing it
+            result = 0;
+        }
+        return result;
+    }
+    else if (79 >= yard && yard >= 70) { //field goal 38 to 47 yards
+        attempt = rand() % 100 + 1; //generates random outcome for making or missing field goal
+        if (attempt <= 75) { //75% chance of making it
+            team_score += 3;
+        }
+        else {               //25% chance of missing it
+            result = 0;
+        }
+        return result;
+    }
+    else if (69 >= yard && yard >= 60) { //field goal 48 to 57 yards
+        attempt = rand() % 100 + 1; //generates random outcome for making or missing field goal
+        if (attempt <= 55) { //55% chance of making it
+            team_score += 3;
+        }
+        else {               //45% chance of missing it
+            result = 0;
+        }
+        return result;
+    }
+    else {                   //field goal greater than 58 yards
+        attempt = rand() % 100 + 1; //generates random outcome for making or missing field goal
+        if (attempt <= 20) { //20% chance of making it
+            team_score += 3;
+        }
+        else {               //80% chance of missing it
+            result = 0;
+        }
+        return result;
+    }
+    
+    printf("\nYour team now has %d points!", team_score);
+    printf("\nThe opposing team has %d points.\n", opponent_score);
+    
+}
+
+void end_game() { //end of game summary
+    
+    printf("The game has now ended!\n");
+    printf("Your score was %d\n", team_score);
+    printf("Your opponent's score was %d\n", opponent_score);
+    printf("Thank you for playing the NFL Simulator!\n");
+    
+}
